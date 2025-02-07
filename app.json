@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Educatronicapp",
+    "slug": "educatronicapp",
+    "version": "2.5.5",
+    "orientation": "portrait",
+    "icon": "./assets/Images/iconEdu.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/Images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f0f8ff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "keyboardDismissMode": "none"
+    },
+    "android": {
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Images/iconEdu.png",
+        "backgroundColor": "#f0f8ff"
+      },
+      "package": "com.joelshaggy.Educatronicapp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4168c0bc-9d51-4b9e-9070-5a6c03232214"
+      }
+    }
+  }
+}
