@@ -15,6 +15,7 @@ import * as Speech from "expo-speech";
 import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import { Audio } from "expo-av";
+import { Camera } from 'expo-camera';
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
 import SVGTopHome from "../components/SVGTopHome";
@@ -30,18 +31,17 @@ const HomeScreen = () => {
   const [recordings, setRecordings] = useState([]); //Variable y funcion para grabaciones de audios
   const navigation = useNavigation(); //Permite hacer la navegacion para los iconos
 
-  //Funcion para iniciar grabacion
   async function startRecording() {
     try {
-      //Permisos de microfono
-      const permission = await Audio.requestPermissionsAsync();
-      if (permission.status === "granted") {
+      // Solicitar permisos de micrófono
+      const { status } = await Camera.requestMicrophonePermissionsAsync();
+      if (status === "granted") {
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
-          interruptionModeIOS: 0,
         });
-        //Configuracion del audio
+
+        // Configuración del audio
         const recordingOptions = {
           android: {
             extension: '.mp4', // Guardar en MP4 (se probo en .wav .m4a y mp3 y whisper rechaza la transcripcion de voz con expo-av usando esos tipos de grabado)
@@ -62,15 +62,17 @@ const HomeScreen = () => {
             linearPCMIsFloat: false,
           },
         };
-        const { recording } = await Audio.Recording.createAsync(
-          recordingOptions
-        );
-        setRecording(recording);
+
+        // Crear la grabación
+        const recordingObject = new Audio.Recording();
+        await recordingObject.prepareToRecordAsync(recordingOptions);
+        await recordingObject.startAsync();
+        setRecording(recordingObject);
       } else {
-        console.error("No se acepto los permisos");
+        console.error("Permiso de micrófono denegado");
       }
     } catch (err) {
-      console.error("Fallo en accesibilidad", err);
+      console.error("Error al iniciar la grabación", err);
     }
   }
 

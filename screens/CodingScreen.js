@@ -20,6 +20,7 @@ import {
 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { Audio } from "expo-av";
+import { Camera } from 'expo-camera';
 import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import * as Speech from "expo-speech";
@@ -101,17 +102,17 @@ export default function CodingScreen() {
     });
   }
 
-  //Funcion para iniciar grabacion
   async function startRecording() {
     try {
-      //Permisos de microfono
-      const permission = await Audio.requestPermissionsAsync();
-      if (permission.status === "granted") {
+      // Solicitar permisos de micrófono
+      const { status } = await Camera.requestMicrophonePermissionsAsync();
+      if (status === "granted") {
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
         });
-        //Configuracion del audio
+
+        // Configuración del audio
         const recordingOptions = {
           android: {
             extension: '.mp4', // Guardar en MP4 (se probo en .wav .m4a y mp3 y whisper rechaza la transcripcion de voz con expo-av usando esos tipos de grabado)
@@ -132,15 +133,17 @@ export default function CodingScreen() {
             linearPCMIsFloat: false,
           },
         };
-        const { recording } = await Audio.Recording.createAsync(
-          recordingOptions
-        );
-        setRecording(recording);
+
+        // Crear la grabación
+        const recordingObject = new Audio.Recording();
+        await recordingObject.prepareToRecordAsync(recordingOptions);
+        await recordingObject.startAsync();
+        setRecording(recordingObject);
       } else {
-        console.error("No se acepto los permisos");
+        console.error("Permiso de micrófono denegado");
       }
     } catch (err) {
-      console.error("Fallo en accesibilidad", err);
+      console.error("Error al iniciar la grabación", err);
     }
   }
 
@@ -376,7 +379,7 @@ export default function CodingScreen() {
         resultSpeech.includes("PISO UNO")
       ) {
         await playSound(require("../assets/audio/soundCorrect.mp3"), 1);
-        setSelectedFloor(1);
+        setSelectedFloor(selectedFloor);
         setCurrentLevelXElevator(levelsElevator[0]);
         Speech.speak("Comando detectado");
       }
@@ -565,7 +568,7 @@ export default function CodingScreen() {
       setResult("Necesito verificar tus comandos");
       setResultVerific("Da un espacio para verificar");
       setIsValidCoding(false);
-      setSelectedFloor(1);
+      setSelectedFloor(selectedFloor);
       setCurrentLevelXElevator(levelsElevator[0]);
       Alert.alert(
         "Programa cargado",
@@ -585,8 +588,8 @@ export default function CodingScreen() {
         Alert.alert("Campos restablecidos");
         setInputTextCoding("");
         setNameProgram("");
-        setSelectedFloor(1);
-        setCurrentLevelXElevator(levelsElevator[0]);
+        setSelectedFloor(selectedFloor);
+        setCurrentLevelXElevator(levelsElevator[selectedFloor]);
         setIsValidCoding(false);
         setResult("Comienza tu programa");
         setResultVerific("Ingresa tus comandos");
@@ -611,7 +614,7 @@ export default function CodingScreen() {
                 );
                 setInputTextCoding("");
                 setNameProgram("");
-                setSelectedFloor(1);
+                setSelectedFloor(selectedFloor);
                 setCurrentLevelXElevator(levelsElevator[0]);
                 setIsValidCoding(false);
                 setResult("Comienza tu programa");
@@ -631,6 +634,7 @@ export default function CodingScreen() {
     }
   }
 
+  
   //Automata para comando indivudual
   function automatonComands(input) {
     let currentState = 0; // El estado inicial es 0
@@ -652,7 +656,7 @@ export default function CodingScreen() {
             currentState = 3; //Si char es A o a pasa al estado 3
             setResult("Comando Abrir detectado");
           } else if (char === "I" || char === "i") {
-            currentState = 5; //Si char es I o i pasa al estado 5
+            currentState = 1 ; //Si char es I o i pasa al estado 5
             setResult("Comando Inicio detectado");
           } else if (char === "F" || char === "f") {
             currentState = 6; //Si char es F o f pasa al estado 6
@@ -682,6 +686,7 @@ export default function CodingScreen() {
           if (char > 0 && char < 7) {
             currentState = 5; // Si char es mayor a 0 y menor 7, pasar al estado 5
             setResult(`Piso '${char}' detectado`);
+            setSelectedFloor(parseInt(char));
           } else if (char === " ") {
             continue; //Continua en el estado si hay espacios antes de elegir piso
           } else {
@@ -746,7 +751,7 @@ export default function CodingScreen() {
         case 0: // Estado 0
           if (char === "I" || char === "i") {
             currentState = 1; // Forzamos a que nuestro primer estado sea I o i, si es asi va al estado 1
-            setResultVerific("Tu código va por buen camino");
+            setResultVerific("Comenzando con i, esperando numero de piso");
           } else if (char === " ") {
             continue; //Continua en el estado si hay espacios antes de I o i
           } else {
@@ -755,10 +760,11 @@ export default function CodingScreen() {
           }
           break;
         case 1: // Estado 1
-          if (char === "\n") {
+          if (char >='1' && char <='7') {
             currentState = 2; // Si hay un espacio o mas, pasa al estado 2
-            setResultVerific("Tu código va por buen camino");
-          } else if (char === " ") {
+            setResultVerific("Piso inicial detectado:", {char});
+            setSelectedFloor(parseInt(char));
+            } else if (char === " ") {
             continue; //Continua en el estado si hay espacios antes de un enter
           } else {
             setResultVerific("Tu código tiene errores");
@@ -884,6 +890,9 @@ export default function CodingScreen() {
     return currentState === 9; // El input es válido si se llegó al estado 9 al final
   }
 
+
+
+
   //Funcion para validar automata de comandos
   function checkAutomatonComand(text) {
     const isValid = automatonComands(text);
@@ -913,16 +922,14 @@ export default function CodingScreen() {
         console.log("----------Compilacion en proceso----------");
         setButtonDisabled(true); //Desabilitamos el boton compilar
         setCompilationInProgress(true); //Actulizamos el estado de que se esta compilando
-        setIconCompile("clock-o"); //Cambiamos el icono de compilar mientras se compila
-
+        setIconCompile("clock-o");        //Cambiamos el icono de compilar mientras se compila
         // Se reproduce el sonido según el valor de selectedFloor para subir al elevador(Robot) en el piso indicado
-        if (selectedFloor !== 1) {
-          console.log("Subiendo el elevador al piso...", selectedFloor);
-          await playSound(require("../assets/audio/dtmf_2.wav"), selectedFloor);
-        }
 
-        let currentFloor = selectedFloor;
-        console.log("Piso elegido:", selectedFloor);
+        
+       
+
+         let currentFloor = selectedFloor;
+        console.log("Piso elegido:",  selectedFloor);
         console.log("Piso actual:", currentFloor);
         console.log("Texto ingresado:\n", inputTextCoding);
 
@@ -940,6 +947,40 @@ export default function CodingScreen() {
             console.log("Comando Inicio detectado");
             playSound(require("../assets/audio/dtmf_12.wav"), 1);
             i++;
+            if (selectedFloor !== 1) {
+              console.log("Subiendo el elevador al piso...", selectedFloor);
+              
+             
+            }
+            // Verificar si el siguiente caracter es un número
+            if (!isNaN(inputTextCoding[i])) {
+              numFloors = parseInt(inputTextCoding[i]);
+              for (let j = 0; j < numFloors; j++) {
+                await new Promise((resolve) => setTimeout(resolve, 800)); // Esperamos 1 segundo
+                if (currentFloor < floorMax) {
+                  currentFloor++;
+                  console.log("Subiendo a piso:", selectedFloor);
+                  setSelectedFloor(currentFloor);
+                  upNextLevelElevator();
+                  playSound(require("../assets/audio/dtmf_2.wav"), 1);
+                } else {
+                  console.log(
+                    "El elevador no puede subir más. Límite de piso alcanzado:",
+                    floorMax
+                  );
+                  Alert.alert(
+                    "Piso maximo alcanzado ",
+                    "Pasaremos al siguiente comando"
+                  );
+                  break; // Detenemos el bucle si el elevador alcanza el piso máximo
+                }
+              }
+            } else {
+              console.log(
+                "Comando Subir detectado, pero el siguiente caracter no es un número."
+              );
+            }
+            
             //Comando S
           } else if (inputTextCoding[i] === "S" || inputTextCoding[i] === "s") {
             await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -1099,8 +1140,8 @@ export default function CodingScreen() {
         console.log("Valores restablecidos"); //Reiniciamos todo
         Alert.alert("Programa terminado", "Reiniciando el elevador");
         console.log("Bajando el elevador al piso... 1");
-        setSelectedFloor(1);
-        setCurrentLevelXElevator(levelsElevator[0]);
+        setSelectedFloor(selectedFloor);
+        setCurrentLevelXElevator(levelsElevator[selectedFloor]);
         setIconCompile("play-circle");
         setButtonDisabled(false);
         setCompilationInProgress(false);

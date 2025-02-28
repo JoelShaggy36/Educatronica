@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, Dimensions, Alert, TouchableOpacity } from "react-native";
 import { FontAwesome5, AntDesign, FontAwesome } from "@expo/vector-icons";
 import { Audio } from "expo-av";
+import { Camera } from 'expo-camera';
 import { useNavigation } from "@react-navigation/native";
 import * as FileSystem from "expo-file-system";
 import * as Speech from "expo-speech";
@@ -33,17 +34,17 @@ export default function SimulationScreen() {
     doorElevator[1]
   ); //Posicion inicial de la puerta
 
-  //Funcion para iniciar grabacion
   async function startRecording() {
     try {
-      //Permisos de microfono
-      const permission = await Audio.requestPermissionsAsync();
-      if (permission.status === "granted") {
+      // Solicitar permisos de micrófono
+      const { status } = await Camera.requestMicrophonePermissionsAsync();
+      if (status === "granted") {
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
         });
-        //Configuracion del audio
+
+        // Configuración del audio
         const recordingOptions = {
           android: {
             extension: '.mp4', // Guardar en MP4 (se probo en .wav .m4a y mp3 y whisper rechaza la transcripcion de voz con expo-av usando esos tipos de grabado)
@@ -64,15 +65,17 @@ export default function SimulationScreen() {
             linearPCMIsFloat: false,
           },
         };
-        const { recording } = await Audio.Recording.createAsync(
-          recordingOptions
-        );
-        setRecording(recording);
+
+        // Crear la grabación
+        const recordingObject = new Audio.Recording();
+        await recordingObject.prepareToRecordAsync(recordingOptions);
+        await recordingObject.startAsync();
+        setRecording(recordingObject);
       } else {
-        console.error("No se acepto los permisos");
+        console.error("Permiso de micrófono denegado");
       }
     } catch (err) {
-      console.error("Fallo en accesibilidad", err);
+      console.error("Error al iniciar la grabación", err);
     }
   }
 
