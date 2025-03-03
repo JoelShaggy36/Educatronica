@@ -231,16 +231,19 @@ export default function CodingScreen() {
         resultSpeech.includes("Fin") ||
         resultSpeech.includes("FIN")
       ) {
+        
         setIsValidCoding(true);
       }
 
       //Comando para activar el dictado dentro del inputTextCoding
       if (
-        resultSpeech.includes("código") ||
-        resultSpeech.includes("Código") ||
-        resultSpeech.includes("CÓDIGO")
+        resultSpeech.includes("inicio") ||
+        resultSpeech.includes("Inicio") ||
+        resultSpeech.includes("INICIO")
       ) {
         setInputTextCoding(modifiedResultSpeech);
+        checkAutomatonComand(modifiedResultSpeech);
+        checkAutomatonCoding(modifiedResultSpeech);
         inputRefCoding.current.focus();
       }
 
@@ -495,6 +498,9 @@ export default function CodingScreen() {
         !resultSpeech.includes("simular") &&
         !resultSpeech.includes("Simular") &&
         !resultSpeech.includes("SIMULAR") &&
+        !resultSpeech.includes("inicio") &&
+        !resultSpeech.includes("Inicio") &&
+        !resultSpeech.includes("INICIO") &&
         !resultSpeech.includes("tutorial") &&
         !resultSpeech.includes("Tutorial") &&
         !resultSpeech.includes("TUTORIAL")
@@ -558,23 +564,29 @@ export default function CodingScreen() {
   //Funcion para cargar NombredePrograma y Codigo desde el modal
   function selectProgram(nameProgramSelect) {
     const selectProgram = programsSaveds.find(
-      (program) => program.nameProgram === nameProgramSelect
+      (program) => program.nameProgram === nameProgramSelect,
+
     );
     if (selectProgram) {
       setNameProgram(selectProgram.nameProgram);
-      setInputTextCoding(selectProgram.inputTextCoding);
+      setInputTextCoding(selectProgram.inputTextCoding); 
+      setSelectedFloor(selectedFloor);
+      checkAutomatonComand(selectProgram.inputTextCoding);
+      checkAutomatonCoding(selectProgram.inputTextCoding);
+      setCurrentLevelXElevator(levelsElevator[selectedFloor]);
       setModalVisible(false);
       setProgramSelect(selectProgram); // Establecer el programa seleccionado
       setResult("Necesito verificar tus comandos");
       setResultVerific("Da un espacio para verificar");
-      setIsValidCoding(false);
-      setSelectedFloor(selectedFloor);
-      setCurrentLevelXElevator(levelsElevator[0]);
+      
       Alert.alert(
         "Programa cargado",
         "El programa ha sido cargado exitosamente"
       );
+      setIsValidCoding(true);
+
     }
+    
   }
 
   //Funcion para borrar el programa cargado desde el modal
@@ -615,7 +627,7 @@ export default function CodingScreen() {
                 setInputTextCoding("");
                 setNameProgram("");
                 setSelectedFloor(selectedFloor);
-                setCurrentLevelXElevator(levelsElevator[0]);
+                setCurrentLevelXElevator(levelsElevator[selectedFloor]);
                 setIsValidCoding(false);
                 setResult("Comienza tu programa");
                 setResultVerific("Ingresa tus comandos");
@@ -896,12 +908,14 @@ export default function CodingScreen() {
   //Funcion para validar automata de comandos
   function checkAutomatonComand(text) {
     const isValid = automatonComands(text);
+    
     setIsValid(isValid);
   }
 
   //Funcion para validar automata de estructura de codigo
   function checkAutomatonCoding(text) {
     const isValidCoding = automatonCoding(text);
+    
     setIsValidCoding(isValidCoding);
   }
 
@@ -923,6 +937,8 @@ export default function CodingScreen() {
         setButtonDisabled(true); //Desabilitamos el boton compilar
         setCompilationInProgress(true); //Actulizamos el estado de que se esta compilando
         setIconCompile("clock-o");        //Cambiamos el icono de compilar mientras se compila
+        setSelectedFloor(selectedFloor);
+        setCurrentLevelXElevator(levelsElevator[selectedFloor]);
         // Se reproduce el sonido según el valor de selectedFloor para subir al elevador(Robot) en el piso indicado
 
         
@@ -960,7 +976,7 @@ export default function CodingScreen() {
                 if (currentFloor < floorMax) {
                   currentFloor++;
                   console.log("Subiendo a piso:", selectedFloor);
-                  setSelectedFloor(currentFloor);
+                  setSelectedFloor(selectedFloor);
                   upNextLevelElevator();
                   playSound(require("../assets/audio/dtmf_2.wav"), 1);
                 } else {
@@ -1233,7 +1249,11 @@ export default function CodingScreen() {
               name="file-upload"
               size={Platform.OS === "android" ? 40 : 35}
               color="black"
-              onPress={() => setModalVisible(true)}
+              onPress={() => {setModalVisible(true);}}
+
+              onChangeText={(text) => {
+                setInputTextCoding(text);
+              }}
             />
             <Text style={styles.textComand}>Cargar</Text>
             <Text style={styles.textComand}>Programa</Text>
@@ -1416,6 +1436,8 @@ export default function CodingScreen() {
               setInputTextCoding(text);
               checkAutomatonComand(text);
               checkAutomatonCoding(text);
+              
+
             }}
           ></TextInput>
 
@@ -1425,7 +1447,10 @@ export default function CodingScreen() {
               size={35}
               color="#f0ffff"
               onPress={recording ? stopRecording : startRecording}
+              
               disabled={isButtonDisabled}
+              
+              
             />
           </TouchableOpacity>
         </View>
