@@ -655,20 +655,23 @@ export default function CodingScreen() {
       const char = input.charAt(i);
       switch (currentState) {
         case 0: // Estado 0
-          if (char === "S" || char === "s") {
-            currentState = 1; // Si char es S o s pasa al estado 1
-            setResult("Comando Subir detectado");
+           if (char=="O"|| char == "o"){
+            currentState = 6;
+            setResult("Comando piso detectado");
+           } else if(char === "S" || char === "s") {
+            currentState = 7; // Si char es S o s pasa al estado 1
+            setResult("Comando S detectado");
           } else if (char === "B" || char === "b") {
             currentState = 1; //Si char es B o b pasa al estado 1
             setResult("Comando Bajar detectado");
           } else if (char === "P" || char === "p") {
-            currentState = 3; //Si char es P o p pasa al estado 3
-            setResult("Comando Parar detectado");
+            currentState = 7; //Si char es P o p pasa al estado 3
+            setResult("Comando P detectado");
           } else if (char === "A" || char === "a") {
             currentState = 3; //Si char es A o a pasa al estado 3
             setResult("Comando Abrir detectado");
           } else if (char === "I" || char === "i") {
-            currentState = 1 ; //Si char es I o i pasa al estado 5
+            currentState = 7 ; //Si char es I o i pasa al estado 5
             setResult("Comando Inicio detectado");
           } else if (char === "F" || char === "f") {
             currentState = 6; //Si char es F o f pasa al estado 6
@@ -690,18 +693,23 @@ export default function CodingScreen() {
             currentState = 2; // Si hay un espacio o mas, pasa al estado 2
             setResult("Sintaxis valida");
           } else {
-            setResult("Invalido: Debe haber un espacio despues del comando");
-            return false; // Si no hay un espacio, el input es inválido
-          }
+            continue;
+        }//else {
+           // setResult("Invalido: Debe haber un espacio despues del comando");
+          //  return false; // Si no hay un espacio, el input es inválido
+         // }
           break;
         case 2: // Estado 2
           if (char > 0 && char < 7) {
             currentState = 5; // Si char es mayor a 0 y menor 7, pasar al estado 5
             setResult(`Piso '${char}' detectado`);
             setSelectedFloor(parseInt(char));
-          } else if (char === " ") {
-            continue; //Continua en el estado si hay espacios antes de elegir piso
-          } else {
+          } else if (char === "\n") {
+            currentState = 5; // Si char es mayor a 0 y menor 7, pasar al estado 5
+            setResult(`Piso '1' detectado`);
+            setSelectedFloor(1);
+          } 
+         else {
             setResult(`Invalido: El numero '${char}' no corresponde a un piso`);
             return false; // Si no hay un numero mayor y menor  de 0 a 8 regresa un invalido
           }
@@ -711,7 +719,7 @@ export default function CodingScreen() {
             currentState = 4; // Si hay un espacio o mas, pasa al estado 4
             setResult("Sintaxis valida");
           } else {
-            setResult("Invalido: Debe haber un espacio despues del comando");
+            setResult("Invalido: Debe haber un espacio despues del comando ");
             return false; // Si no hay un espacio, el input es inválido
           }
           break;
@@ -749,6 +757,19 @@ export default function CodingScreen() {
             return false; // Si no hay salto de linea el input es invalido
           }
           break;
+          case 7:
+            if(char === " "){
+                currentState = 2; 
+            }else if (char === "\n") {
+                currentState = 0; // Si char es mayor a 0 y menor 7, pasar al estado 5
+                setResult(`Piso '1' detectado`);
+                setSelectedFloor(1);
+            } else {
+              setResult(`Esperando comandos`);
+              currentState= 0;
+              
+            }
+            break;
       }
     }
   }
@@ -790,7 +811,7 @@ export default function CodingScreen() {
             char === "S" ||
             char === "s" ||
             char === "B" ||
-            char === "b"
+            char === "b" 
           ) {
             currentState = 3; // Si char es S,s o B,b pasa al estado 3
             setResultVerific("Tu código va por buen camino");
@@ -870,7 +891,9 @@ export default function CodingScreen() {
             char === "S" ||
             char === "s" ||
             char === "B" ||
-            char === "b"
+            char === "b" ||
+            char === "SI PISO" ||
+            char === "Si piso"
           ) {
             currentState = 3; //Si char es A,a o P,p pasa al estado 3
           } else if (
@@ -1458,3 +1481,4 @@ export default function CodingScreen() {
     </SafeAreaView>
   );
 }
+
