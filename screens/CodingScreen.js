@@ -34,6 +34,8 @@ import { API_KEY } from "../config";
 
 //Componente principal
 export default function CodingScreen() {
+  let contadorPiso = 1;
+  let numPiso;
   const [nameProgram, setNameProgram] = useState(""); //Variables para ingresar texto en el ProgramName
   const [inputTextCoding, setInputTextCoding] = useState(""); //Variables para ingresar texto
   const [isValid, setIsValid] = useState(false); //Variables para saber si el comando es correcto
@@ -207,6 +209,11 @@ export default function CodingScreen() {
         .replace(/Baja|baja|vaja|Vaja|BAJA|VAJA/g, "B") // Reemplazar alguna opcion de Bajar por "B"
         .replace(/Para|para|PARA/g, "P") // Reemplazar alguna opcion de Bajar por "P"
         .replace(/Abrir|abrir|ABRIR/g, "A") // Reemplazar alguna opcion de Bajar por "B"
+        .replace(/Menor que|menor que|MENOR QUE/g, "<") // Reemplazar alguna opcion de menor que por "<"
+        .replace(/Mayor que|mayor que|MAYOR QUE/g, ">") // Reemplazar alguna opcion de mayor que por ">"
+        .replace(/Igual que|igual que|IGUAL QUE/g, "=") // Reemplazar alguna opcion de igual que por "="
+        .replace(/Diferente que|diferente que|DIFERENTE QUE/g, "!=") // Reemplazar alguna opcion de diferente que por "!="
+
 
         .replace(/,/g, "") // Reemplazar "," por ""
 
@@ -503,7 +510,7 @@ export default function CodingScreen() {
         !resultSpeech.includes("INICIO") &&
         !resultSpeech.includes("tutorial") &&
         !resultSpeech.includes("Tutorial") &&
-        !resultSpeech.includes("TUTORIAL")
+        !resultSpeech.includes("TUTORIAL") 
       ) {
         await playSound(require("../assets/audio/incorrectSound.mp3"), 1);
         Speech.speak(
@@ -657,7 +664,7 @@ export default function CodingScreen() {
         case 0: // Estado 0
            if (char=="O"|| char == "o"){
             currentState = 6;
-            setResult("Comando piso detectado");
+            setResult("Comando O detectado");
            } else if(char === "S" || char === "s") {
             currentState = 7; // Si char es S o s pasa al estado 1
             setResult("Comando S detectado");
@@ -676,7 +683,10 @@ export default function CodingScreen() {
           } else if (char === "F" || char === "f") {
             currentState = 6; //Si char es F o f pasa al estado 6
             setResult("Comando Fin detectado");
-          } else if (char === "\n") {
+          }else if (char ==="<"|| char ===">"|| char ==="="|| char ==="!"){
+            currentState=1;
+            setResult("signo detectado");
+          }else if (char === "\n") {
             setResult("Comando Enter detectado");
             continue; //Continua en el estado si hay espacios antes de cualquier caracter
           } else if (char === " ") {
@@ -690,7 +700,7 @@ export default function CodingScreen() {
           break;
         case 1: // Estado 1
           if (char === " ") {
-            currentState = 2; // Si hay un espacio o mas, pasa al estado 2
+            currentState = 8; // Si hay un espacio o mas, pasa al estado 2
             setResult("Sintaxis valida");
           } else {
             continue;
@@ -702,8 +712,13 @@ export default function CodingScreen() {
         case 2: // Estado 2
           if (char > 0 && char < 7) {
             currentState = 5; // Si char es mayor a 0 y menor 7, pasar al estado 5
-            setResult(`Piso '${char}' detectado`);
+            setResult(`Piso '${char}' detectado`);              
             setSelectedFloor(parseInt(char));
+            if(contadorPiso==1){
+             numPiso = char;
+             console.log(numPiso);
+            }
+            contadorPiso++;
           } else if (char === "\n") {
             currentState = 5; // Si char es mayor a 0 y menor 7, pasar al estado 5
             setResult(`Piso '1' detectado`);
@@ -764,12 +779,31 @@ export default function CodingScreen() {
                 currentState = 0; // Si char es mayor a 0 y menor 7, pasar al estado 5
                 setResult(`Piso '1' detectado`);
                 setSelectedFloor(1);
-            } else {
+            }else {
               setResult(`Esperando comandos`);
-              currentState= 0;
-              
+              currentState= 0;  
             }
             break;
+            case 8:
+              if (char > 0 && char < 7){
+                setResult(`Piso '${char}' detectado`);              
+                if(char < numPiso){
+                  currentState=5;
+                }else if (char > numPiso){
+                currentState=5;
+                }else if(char == numPiso){
+                  currentState=5;
+                }else if (char <= numPiso){
+                  currentState=5;
+                }else if(char>= numPiso){
+                  currentState=5;
+                }else if (char != numPiso){
+                  currentState=5;
+              }else{
+                currentState=0;
+                setResult("hola caracola");
+              }
+            }    
       }
     }
   }
@@ -1481,4 +1515,3 @@ export default function CodingScreen() {
     </SafeAreaView>
   );
 }
-
