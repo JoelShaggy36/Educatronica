@@ -27,22 +27,25 @@ const styles = StyleSheet.create({
       fontSize: 20,
       color: "#56D0F6",
       textAlign: "center",
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 25 : 15,
     },
     infoText: {
-      fontSize: 15,
+      fontSize: 20,
       textAlign: "justify",
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 20 : 15,
     },
     exampleCoding: {
-      marginTop: "1%",
-      backgroundColor: "ghostwhite",
+      marginTop: "3%",
+      backgroundColor: "#ffe4e1",
       borderColor: "#ccc",
       borderWidth: 2,
       padding: 8,
       borderRadius: 5,
-      width:'95%',
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      justifyContent: 'center',
+      textAlign: 'center',
+      width:'70%',
+      fontSize: Platform.OS === 'android' ? 20 : 15,
+      
     },
     cell:{
       flex: 1,
@@ -52,13 +55,13 @@ const styles = StyleSheet.create({
     cellText:{
       marginBottom:5,
       marginTop:5,
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 20 : 15,
     },
     cellHeaderText:{
       marginBottom:5,
       marginTop:5,
       color: "#56D0F6",
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 20 : 15,
     },
   });
 
