@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
       borderWidth: 2,
       padding: 8,
       borderRadius: 5,
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 25 : 15,
     },
     sectionOfPrograms: {
       width: "100%",
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
       width: "100%",
     },
     sectionforPicker: {
-      width: "100%",
+      width: "90%",
       alignContent:"center",
       alignItems:"center"
     },
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
       justifyContent: "center",
     },
     textComand:{
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 15 : 15,
       marginTop:1,
     },
     sectiontextProgram: {
@@ -66,19 +66,19 @@ const styles = StyleSheet.create({
       padding: 10,
       marginTop: "3%",
       borderRadius: 10,
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 25 : 15,
     },
     message: {
       margin: 8,
       textAlign: "center",
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 15 : 15,
     },
     resultCommand: {
       textAlign: "center",
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 15 : 15,
     },
     resultCheck: {
-      fontSize: Platform.OS === 'android' ? 10 : 15,
+      fontSize: Platform.OS === 'android' ? 15 : 15,
       textAlign: "center",
     },
     modalView: {
@@ -92,12 +92,12 @@ const styles = StyleSheet.create({
     },
     recordButtonContainer: {
       position: "absolute",
-      bottom: 16,
-      right: 16,
+      bottom: 21,
+      right: 21,
       backgroundColor: "#00bfff",
-      borderRadius: 30,
-      width: 60,
-      height: 60,
+      borderRadius: 40,
+      width: 65,
+      height: 65,
       justifyContent: "center",
       alignItems: "center",
     },
