@@ -203,7 +203,7 @@ export default function CodingScreen() {
       //Creacion de diccionario de palabras
       const modifiedResultSpeech = resultSpeech
         .replace(/Inicio|inicio|INICIO/g, "I") // Reemplazar alguna opcion de Subir por "I"
-        .replace(/Fin|fin|FIN/g, "F") // Reemplazar alguna opcion de Bajar por "F"
+        .replace(/Fin|fin|FIN/g, "Fin") // Reemplazar alguna opcion de Bajar por "F"
         .replace(/Enter|enter|ENTER/g, "\n") // Reemplazar alguna opcion de Bajar por "\n"
         .replace(/Sube|sube|suve|Suve|SUBE|SUVE/g, "S") // Reemplazar alguna opcion de Subir por "S"
         .replace(/Baja|baja|vaja|Vaja|BAJA|VAJA/g, "B") // Reemplazar alguna opcion de Bajar por "B"
@@ -211,8 +211,11 @@ export default function CodingScreen() {
         .replace(/Abrir|abrir|ABRIR/g, "A") // Reemplazar alguna opcion de Bajar por "B"
         .replace(/Menor que|menor que|MENOR QUE/g, "<") // Reemplazar alguna opcion de menor que por "<"
         .replace(/Mayor que|mayor que|MAYOR QUE/g, ">") // Reemplazar alguna opcion de mayor que por ">"
-        .replace(/Igual que|igual que|IGUAL QUE/g, "=") // Reemplazar alguna opcion de igual que por "="
-        .replace(/Diferente que|diferente que|DIFERENTE QUE/g, "!=") // Reemplazar alguna opcion de diferente que por "!="
+        .replace(/Igual Igual que|igual igual que|IGUAL IGUAL QUE/g, "==") // Reemplazar alguna opcion de igual que por "="
+        .replace(/Mayor o igual que|mayor o igual que|MAYOR O IGUAL QUE/g, ">=") // Reemplazar alguna opcion de igual que por ">="
+        .replace(/Menor o igual que|menor o igual que|MENOR O IGUAL QUE/g, "<=") // Reemplazar alguna opcion de igual que por "<="
+        .replace(/Diferente que|diferente que|DIFERENTE QUE/g, "!=") // Reemplazar alguna opcion de igual que por "<="
+        .replace(/Fin si|fin si|FIN SI/g, "Fin si") // Reemplazar alguna opcion de diferente que por "FIN SI"
 
 
         .replace(/,/g, "") // Reemplazar "," por ""
@@ -653,299 +656,479 @@ export default function CodingScreen() {
     }
   }
 
-// Autómata para comando individual
-  function automatonComands(input) {
-    let currentState = 0; //estado inicial
-    let currentFloor = null; //piso actual actualizado 
-    let conditionMet = false; //control de condicion if (verdadera o falsa)
 
-    setResult("Ingresa tus comandos");
-    const lines = input.split("\n");//separa el texto en lineas (despues de un salto de linea)
+// Automata para verificar la estructura del codigo
+function automatonCoding(inputText) {
+  let currentState = 0;
+  let inConditionBlock = false; // Para Si
+  let inWhileBlock = false; // Para Mientras
+  let inElseBlock = false; // Para Si no
+  let whileCondition = null; // Almacenar la condición del Mientras
+  let modifiesFloorInWhile = false; // Verificar si el bloque Mientras modifica el piso
+  let afterSiBlock = false; // Para rastrear si estamos después de un Fin Si
 
-    for (let line of lines) { //se va a iterar de linea en linea en ves de carater por caracter
-      const tokens = line.trim().split(" ");//se separaran las lineas de codigo por instrucciones (despues de un espacio) y se guaradara en tokens
-      if (tokens.length === 0) continue; //si tokens esta vacio continuan las intrucciones
+  const lines = inputText.split("\n");
 
-      const command = tokens[0].toLowerCase(); //se manejan mas faciles los comandos (se convierten a minusculas) para no tener I,i,A,a etc 
-      switch (currentState) {
-        case 0: // Estado inicial
-          if (command === "i") {
-            const floor = parseInt(tokens[1]); //despues de i debe de haber un numero, se convierte a entero y se pasa ese valor a floor
-            if (!isNaN(floor) && floor > 0 && floor <= 7) {//si el piso es un numero entre 1 y 7 
-              currentFloor = floor;
-              setResult(`Inicio en piso '${currentFloor}'`);
-              setSelectedFloor(floor);
-              setCurrentLevelXElevator(levelsElevator[floor - 1]);
-              currentState = 1;
-            } else {
-              setResult("Error: Se esperaba un número de piso válido después de I");
-              return false;
-            }
+  for (let line of lines) {
+    const tokens = line.trim().split(" ");
+    if (tokens.length === 0) continue;
+
+    const command = tokens[0].toLowerCase();
+
+    if (inConditionBlock) {
+      if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+        inConditionBlock = false;
+        setResultVerific('Bloque Si cerrado correctamente');
+        afterSiBlock = true; // Marcar que estamos después de un Fin Si
+        currentState = 1;
+      } else if (["s", "sub", "b", "baj", "p", "pausa", "a"].includes(command)) {
+        setResultVerific('Tu código va por buen camino');
+      } else {
+        setResultVerific('Comando desconocido \'' + command + '\' dentro de Si');
+        return false;
+      }
+      continue;
+    }
+
+    if (inElseBlock) {
+      if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+        inElseBlock = false;
+        afterSiBlock = false; // Reiniciar después de cerrar Si no
+        setResultVerific('Bloque Si no cerrado correctamente');
+        currentState = 1;
+      } else if (["s", "sub", "b", "baj", "p", "pausa", "a"].includes(command)) {
+        setResultVerific('Tu código va por buen camino');
+      } else {
+        setResultVerific('Comando desconocido \'' + command + '\' dentro de Si no');
+        return false;
+      }
+      continue;
+    }
+
+    if (inWhileBlock) {
+      if (command === "s" || command === "sub" || command === "b" || command === "baj") {
+        modifiesFloorInWhile = true;
+        setResultVerific('Tu código va por buen camino');
+      } else if (command === "p" || command === "pausa" || command === "a") {
+        setResultVerific('Tu código va por buen camino');
+      } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "mientras") {
+        if (!modifiesFloorInWhile) {
+          setResultVerific('Error de sintaxis: El bloque Mientras causará un bucle infinito porque no contiene comandos que modifiquen el piso.');
+          return false;
+        }
+        inWhileBlock = false;
+        whileCondition = null;
+        modifiesFloorInWhile = false;
+        setResultVerific('Bloque Mientras cerrado correctamente');
+        currentState = 1;
+      } else {
+        setResultVerific('Comando desconocido \'' + command + '\' dentro de Mientras');
+        return false;
+      }
+      continue;
+    }
+
+    switch (currentState) {
+      case 0: // Estado inicial
+        setResultVerific('Comienza tu programa');
+        if (command === "i") {
+          const floor = tokens[1] ? parseInt(tokens[1]) : 1;
+          if (!isNaN(floor) && Number.isInteger(floor)) {
+            setResultVerific('Piso inicial detectado: \'' + floor + '\'');
+            currentState = 1;
           } else {
-            setResult("Error: El programa debe iniciar con 'I X'");
+            setResultVerific('Se esperaba un numero de piso');
             return false;
           }
-          break;
+        }
+        break;
 
-        case 1: // Estado de operación normal
-          if (command === "s" || command === "sub") {//se agrega sub para que sea parecida a la primer version de educatronicapp
-            const floors = parseInt(tokens[1]); //se convierte a entero el caracter despues de s o sub
-            if (!isNaN(floors)) { //si es un numero 
-              currentFloor += floors; //aumenta el valor del piso actual por el numero de pisos que quiere subir
-              setResult(`Subiendo a piso '${currentFloor}'`);//mensaje
-            } else {
-              setResult("Error: Se esperaba un número después de S");
-              return false;
-            }
-          } else if (command === "b" || command === "baj") {
-            const floors = parseInt(tokens[1]);
-            if (!isNaN(floors)) {
-              currentFloor -= floors;
-              setResult(`Bajando a piso '${currentFloor}'`);
-            } else {
-              setResult("Error: Se esperaba un número después de B");
-              return false;
-            }
-          } else if (command === "p" || command === "pausa") {
-            const time = parseInt(tokens[1]);
-            if (!isNaN(time)) {
-              setResult(`Pausa de '${time}' unidades`);
-            } else {
-              setResult("Error: Se esperaba un número después de Pausa");
-              return false;
-            }
-          } else if (command === "a" || command === "abr") {
-            const time = parseInt(tokens[1]);
-            if (!isNaN(time)) {
-              setResult(`Abrir por '${time}' unidades`);
-            } else {
-              setResult("Error: Se esperaba un número después de A");
-              return false;
-            }
-          } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "piso") { /*condicion si se cumplira
-           si[piso]*/
-            const operator = tokens[2];//se guarda el operador
-            const conditionFloor = parseInt(tokens[3]);//el piso condicional se convierte a entero
-            if (isNaN(conditionFloor)) {//si el piso condicional no es un numero
-              setResult("Error: Se esperaba un número después de 'Si piso operador'");
-              return false;
-            }
+      case 1: // Estado de comandos
+        if (["s", "sub", "b", "baj", "p", "pausa", "a"].includes(command)) {
+          setResultVerific('Tu código va por buen camino');
+        } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "piso") {
+          const operator = tokens[2];
+          const conditionFloor = parseInt(tokens[3]);
+          if (!isNaN(conditionFloor) && ["=", "<", ">", "<=", ">="].includes(operator)) {
+            setResultVerific('Condición Si detectada');
+            inConditionBlock = true;
+            currentState = 2;
+          } else {
+            setResultVerific('Error: Condición inválida en \'Si piso\'');
+            return false;
+          }
+        } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "no" && afterSiBlock) {
+          setResultVerific('Condición Si no detectada');
+          inElseBlock = true;
+          currentState = 4; // Nuevo estado para Si no
+        } else if (command === "mientras" && tokens[1] && tokens[1].toLowerCase() === "piso") {
+          const operator = tokens[2];
+          const conditionFloor = parseInt(tokens[3]);
+          if (!isNaN(conditionFloor) && ["=", "<", ">", "<=", ">="].includes(operator)) {
+            whileCondition = { operator, conditionFloor };
+            setResultVerific('Condición Mientras detectada');
+            inWhileBlock = true;
+            modifiesFloorInWhile = false;
+            currentState = 3;
+          } else {
+            setResultVerific('Error: Condición inválida en \'Mientras piso\'');
+            return false;
+          }
+        } else if (command === "f" || command === "fin") {
+          setResultVerific('La estructura de tu código es correcta');
+          return true;
+        } else {
+          setResultVerific('Comando desconocido \'' + command + '\'');
+          return false;
+        }
+        break;
+
+      case 2: // Dentro de un bloque Si
+        // Manejado en el bloque if (inConditionBlock) arriba
+        break;
+
+      case 3: // Dentro de un bloque Mientras
+        // Manejado en el bloque if (inWhileBlock) arriba
+        break;
+
+      case 4: // Dentro de un bloque Si no
+        // Manejado en el bloque if (inElseBlock) arriba
+        break;
+
+      default:
+        setResultVerific('Estado no válido');
+        return false;
+    }
+  }
+
+  return currentState === 1;
+}
+
+// Autómata para comando individual
+function automatonComands(inputText) {
+  let currentState = 0;
+  let currentFloor = 0;
+  let conditionMet = false;
+  let inConditionBlock = false;
+  let inWhileBlock = false;
+  let inElseBlock = false; // Para Si no
+  let skipSiBlock = false; // Para saltar el bloque Si si la condición no se cumple
+  let afterSiBlock = false; // Para permitir Si no después de Fin Si
+
+  const lines = inputText.split("\n");
+
+  for (let line of lines) {
+    const tokens = line.trim().split(" ");
+    if (tokens.length === 0) continue;
+
+    const command = tokens[0].toLowerCase();
+
+    // Saltar comandos si estamos en un bloque Si y la condición no se cumple
+    if (inConditionBlock && !conditionMet) {
+      if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+        inConditionBlock = false;
+        skipSiBlock = false;
+        afterSiBlock = true; // Permitir Si no después
+        setResult('Fin de bloque Si');
+        currentState = 1;
+      }
+      continue;
+    }
+
+    // Saltar comandos si estamos en un bloque Si no y la condición del Si se cumplió
+    if (inElseBlock && conditionMet) {
+      if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+        inElseBlock = false;
+        afterSiBlock = false;
+        setResult('Fin de bloque Si no');
+        currentState = 1;
+      }
+      continue;
+    }
+
+    // Saltar comandos si estamos en un bloque Mientras y la condición no se cumple
+    if (inWhileBlock && !conditionMet) {
+      if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "mientras") {
+        inWhileBlock = false;
+        conditionMet = false;
+        setResult('Fin de bloque Mientras');
+        currentState = 1;
+      }
+      continue;
+    }
+
+    switch (currentState) {
+      case 0: // Estado inicial
+        setResult('Ingresa tus comandos');
+        if (command === "i") {
+          const floor = parseInt(tokens[1]);
+          if (!isNaN(floor)) {
+            currentFloor = floor;
+            setResult('Inicio en piso \'' + currentFloor + '\'');
+            currentState = 1;
+          } else {
+            setResult('Piso 1 detectado');
+            currentFloor = 1;
+          }
+        }
+        break;
+
+      case 1: // Estado de comandos
+        if (command === "s" || command === "subir") {
+          const floors = parseInt(tokens[1]);
+          if (!isNaN(floors)) {
+            currentFloor += floors;
+            setResult('Subiendo a piso \'' + currentFloor + '\'');
+          } else {
+            setResult('Error: Se esperaba un número después de \'S\'');
+            return false;
+          }
+        } else if (command === "b" || command === "baj") {
+          const floors = parseInt(tokens[1]);
+          if (!isNaN(floors)) {
+            currentFloor -= floors;
+            setResult('Bajando a piso \'' + currentFloor + '\'');
+          } else {
+            setResult('Error: Se esperaba un número después de \'B\'');
+            return false;
+          }
+        } else if (command === "p" || command === "pausa") {
+          const time = parseInt(tokens[1]);
+          if (!isNaN(time)) {
+            setResult('Pausa de \'' + time + '\' unidades');
+          } else {
+            setResult('Error: Se esperaba un número después de \'Pausa\'');
+            return false;
+          }
+        } else if (command === "a") {
+          const time = parseInt(tokens[1]);
+          if (!isNaN(time)) {
+            setResult('Abrir por \'' + time + '\' unidades');
+          } else {
+            setResult('Error: Se esperaba un número después de \'A\'');
+            return false;
+          }
+        } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "piso") {
+          const operator = tokens[2];
+          const conditionFloor = parseInt(tokens[3]);
+          if (!isNaN(conditionFloor)) {
             if (operator === ">") conditionMet = currentFloor > conditionFloor;
             else if (operator === "<") conditionMet = currentFloor < conditionFloor;
             else if (operator === "=") conditionMet = currentFloor === conditionFloor;
             else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
             else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
             else {
-              setResult("Error: Operador inválido en 'Si piso'");
+              setResult('Error: Operador inválido en \'Si piso\'');
               return false;
             }
-            if (conditionMet) {
-              setResult(`Condición 'Si piso ${operator} ${conditionFloor}' cumplida`);
-              currentState = 2; // Si se cumple, pasa al estado 2
+            inConditionBlock = true;
+            skipSiBlock = !conditionMet; // Marcar si debemos saltar el bloque Si
+            setResult(
+              conditionMet
+                ? 'Condición \'Si piso ' + operator + ' ' + conditionFloor + '\' cumplida'
+                : 'Condición no cumplida'
+            );
+            currentState = 2;
           } else {
-              setResult(`Condición no cumplida`);
-              currentState = 1; // Si no se cumple, regresa al estado 1 (se omiten las instrucciones internas)
-          }
-          } else if (command === "f" || command === "fin") { //fin de instrucciones sin if
-            setResult("Programa finalizado");
-            return true;
-          } else {
-            setResult(`Comando desconocido '${command}'`);
+            setResult('Error: Se esperaba un número después de \'Si piso [operador]\'');
             return false;
           }
-          break;
-
-        case 2: // Dentro de una condición cumplida
-          if (command === "s" || command === "sub") {
-            const floors = parseInt(tokens[1]);
-            if (!isNaN(floors)) {
-              currentFloor += floors;
-              setResult(`Subiendo a piso '${currentFloor}'`);
-            } else {
-              setResult("Error: Se esperaba un número después de S");
+        } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "no" && afterSiBlock) {
+          inElseBlock = true;
+          setResult('Entrando en bloque Si no');
+          currentState = 4; // Nuevo estado para Si no
+        } else if (command === "mientras" && tokens[1] && tokens[1].toLowerCase() === "piso") {
+          const operator = tokens[2];
+          const conditionFloor = parseInt(tokens[3]);
+          if (!isNaN(conditionFloor)) {
+            if (operator === ">") conditionMet = currentFloor > conditionFloor;
+            else if (operator === "<") conditionMet = currentFloor < conditionFloor;
+            else if (operator === "=") conditionMet = currentFloor === conditionFloor;
+            else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
+            else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+            else {
+              setResult('Error: Operador inválido en \'Mientras piso\'');
               return false;
             }
-          } else if (command === "b" || command === "baj") {
-            const floors = parseInt(tokens[1]);
-            if (!isNaN(floors)) {
-              currentFloor -= floors;
-              setResult(`Bajando a piso '${currentFloor}'`);
-            } else {
-              setResult("Error: Se esperaba un número después de B");
-              return false;
-            }
-          } else if (command === "p" || command === "pausa") {
-            const time = parseInt(tokens[1]);
-            if (!isNaN(time)) {
-              setResult(`Pausa de '${time}' unidades`);
-            } else {
-              setResult("Error: Se esperaba un número después de Pausa");
-              return false;
-            }
-          } else if (command === "a") {
-            const time = parseInt(tokens[1]);
-            if (!isNaN(time)) {
-              setResult(`Abrir por '${time}' unidades`);
-            } else {
-              setResult("Error: Se esperaba un número después de A");
-              return false;
-            }
-          } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") { //fin si
-            setResult("Fin de bloque Si");
-            currentState = 1;
-          } else {
-            setResult(`Comando desconocido '${command}' dentro de Si`);
-            return false;
-          }
-          break;
-      }
-    }
-    return true;
-  }
-
-  // Autómata para verificar la estructura del código
-  function automatonCoding(input) {
-    let currentState = 0;
-
-    setResultVerific("Comienza tu programa");
-    const lines = input.split("\n"); //igual se seprara por lineas en ves de caracteres
-
-    for (let line of lines) { //recorrido linea por linea
-      const tokens = line.trim().split(" "); //se separan las lineas en pequeñas instrucciones
-      if (tokens.length === 0) continue;//si esta vacia continua la siguiente 
-
-      const command = tokens[0].toLowerCase();//se pasa el comando a minusculas para obviar los demas casos
-      switch (currentState) { 
-        case 0: // Estado inicial (esperando "I")
-          if (command === "i") {
-            const floor = parseInt(tokens[1]);//se convierte el piso a entero
-            if (!isNaN(floor) && floor > 0 && floor <= 7) {// si es un piso ente 1 y 7
-              setResultVerific(`Piso inicial detectado: '${floor}'`);//mensaje
-              setSelectedFloor(floor);//se seleciona el piso
-              setCurrentLevelXElevator(levelsElevator[floor - 1]); //se coloca el elevadoor en el piso inicial
-              currentState = 1; //pasa al estado 1
-            } else {
-              setResultVerific("Error: Se esperaba un número de piso válido después de I");
-              return false;
-            }
-          } else {
-            setResultVerific("Debes iniciar con el comando I o i");
-            return false;
-          }
-          break;
-
-        case 1: // Estado normal
-          if (["s", "sub"].includes(command)) {// si el comando incluye s o sub
-            const floors = parseInt(tokens[1]); //se convierte el siguiente valor a entero
-            if (!isNaN(floors)) {//si es un numero
-              setResultVerific("Tu código va por buen camino"); //mensaje de correcto
-              currentState = 1; //vuelve a entrar al caso para seguir verificando mas instrucciones
-            } else {
-              setResultVerific("Error: Se esperaba un número después de S");
-              return false;
-            }
-          } else if (["b", "baj"].includes(command)) {
-            const floors = parseInt(tokens[1]);
-            if (!isNaN(floors)) {
-              setResultVerific("Tu código va por buen camino");
-              currentState = 1;
-            } else {
-              setResultVerific("Error: Se esperaba un número después de B");
-              return false;
-            }
-          } else if (["p", "pausa"].includes(command)) {
-            const time = parseInt(tokens[1]);
-            if (!isNaN(time)) {
-              setResultVerific("Tu código va por buen camino");
-              currentState = 1;
-            } else {
-              setResultVerific("Error: Se esperaba un número después de Pausa");
-              return false;
-            }
-          } else if (command === "a" || command === "abr") {
-            const time = parseInt(tokens[1]);
-            if (!isNaN(time)) {
-              setResultVerific("Tu código va por buen camino");
-              currentState = 1;
-            } else {
-              setResultVerific("Error: Se esperaba un número después de A");
-              return false;
-            }
-          } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "piso") { //condicion si piso
-            const operator = tokens[2]; //operador
-            const conditionFloor = parseInt(tokens[3]); //numero de condicion
-            if (!isNaN(conditionFloor) && [">", "<", "=", "<=", ">="].includes(operator)) { //si el numero condicional esta acompañado de un operador
-              setResultVerific("Condición Si detectada");
-              currentState = 2;
-            } else {
-              setResultVerific("Error: Formato inválido en 'Si piso operador numero'");
-              return false;
-            }
-          } else if (command === "f" || command === "fin") {  //fin del si para poder terminar el bloque si
-            setResultVerific("La estructura de tu código es correcta");
+            inWhileBlock = true;
+            setResult(
+              conditionMet
+                ? 'Condición \'Mientras piso ' + operator + ' ' + conditionFloor + '\' cumplida'
+                : 'Condición no cumplida'
+            );
             currentState = 3;
-          } else if (command === "i") {
-            setResultVerific("Error ya tienes un comando Inicio");
-            return false;
           } else {
-            setResultVerific(`Comando desconocido '${command}'`);
+            setResult('Error: Se esperaba un número después de \'Mientras piso [operador]\'');
             return false;
           }
-          break;
+        } else if (command === "f" || command === "fin") {
+          setResult('Programa finalizado');
+          return true;
+        } else {
+          setResult('Comando desconocido \'' + command + '\'');
+          return false;
+        }
+        break;
 
-        case 2: // Dentro de bloque "Si"
-          if (["s", "sub"].includes(command)) {
-            const floors = parseInt(tokens[1]);
-            if (!isNaN(floors)) {
-              setResultVerific("Tu código va por buen camino");
-            } else {
-              setResultVerific("Error: Se esperaba un número después de S");
-              return false;
-            }
-          } else if (["b", "baj"].includes(command)) {
-            const floors = parseInt(tokens[1]);
-            if (!isNaN(floors)) {
-              setResultVerific("Tu código va por buen camino");
-            } else {
-              setResultVerific("Error: Se esperaba un número después de B");
-              return false;
-            }
-          } else if (["p", "pausa"].includes(command)) {
-            const time = parseInt(tokens[1]);
-            if (!isNaN(time)) {
-              setResultVerific("Tu código va por buen camino");
-            } else {
-              setResultVerific("Error: Se esperaba un número después de Pausa");
-              return false;
-            }
-          } else if (command === "a" || command === "abr") {
-            const time = parseInt(tokens[1]);
-            if (!isNaN(time)) {
-              setResultVerific("Tu código va por buen camino");
-            } else {
-              setResultVerific("Error: Se esperaba un número después de A");
-              return false;
-            }
-          } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") { //fin si
-            setResultVerific("Bloque Si cerrado correctamente");
-            currentState = 1;
+      case 2: // Dentro de un bloque Si
+        if (command === "s" || command === "sub") {
+          const floors = parseInt(tokens[1]);
+          if (!isNaN(floors)) {
+            currentFloor += floors;
+            setResult('Subiendo a piso \'' + currentFloor + '\'');
           } else {
-            setResultVerific(`Comando desconocido '${command}' dentro de Si`);
+            setResult('Error: Se esperaba un número después de \'S\'');
             return false;
           }
-          break;
+        } else if (command === "b" || command === "baj") {
+          const floors = parseInt(tokens[1]);
+          if (!isNaN(floors)) {
+            currentFloor -= floors;
+            setResult('Bajando a piso \'' + currentFloor + '\'');
+          } else {
+            setResult('Error: Se esperaba un número después de \'B\'');
+            return false;
+          }
+        } else if (command === "p" || command === "pausa") {
+          const time = parseInt(tokens[1]);
+          if (!isNaN(time)) {
+            setResult('Pausa de \'' + time + '\' unidades');
+          } else {
+            setResult('Error: Se esperaba un número después de \'Pausa\'');
+            return false;
+          }
+        } else if (command === "a") {
+          const time = parseInt(tokens[1]);
+          if (!isNaN(time)) {
+            setResult('Abrir por \'' + time + '\' unidades');
+          } else {
+            setResult('Error: Se esperaba un número después de \'A\'');
+            return false;
+          }
+        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+          inConditionBlock = false;
+          skipSiBlock = false;
+          afterSiBlock = true;
+          setResult('Fin de bloque Si');
+          currentState = 1;
+        } else {
+          setResult('Comando desconocido \'' + command + '\' dentro de Si');
+          return false;
+        }
+        break;
 
-        case 3: // Estado final
-          if (tokens[0] !== "") {
-            setResultVerific("Error ya haz colocado un comando Fin");
+      case 3: // Dentro de un bloque Mientras
+        if (command === "s" || command === "sub") {
+          const floors = parseInt(tokens[1]);
+          if (!isNaN(floors)) {
+            currentFloor += floors;
+            setResult('Subiendo a piso \'' + currentFloor + '\'');
+          } else {
+            setResult('Error: Se esperaba un número después de \'S\'');
             return false;
           }
-          break;
-      }
+        } else if (command === "b" || command === "baj") {
+          const floors = parseInt(tokens[1]);
+          if (!isNaN(floors)) {
+            currentFloor -= floors;
+            setResult('Bajando a piso \'' + currentFloor + '\'');
+          } else {
+            setResult('Error: Se esperaba un número después de \'B\'');
+            return false;
+          }
+        } else if (command === "p" || command === "pausa") {
+          const time = parseInt(tokens[1]);
+          if (!isNaN(time)) {
+            setResult('Pausa de \'' + time + '\' unidades');
+          } else {
+            setResult('Error: Se esperaba un número después de \'Pausa\'');
+            return false;
+          }
+        } else if (command === "a") {
+          const time = parseInt(tokens[1]);
+          if (!isNaN(time)) {
+            setResult('Abrir por \'' + time + '\' unidades');
+          } else {
+            setResult('Error: Se esperaba un número después de \'A\'');
+            return false;
+          }
+        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "mientras") {
+          inWhileBlock = false;
+          conditionMet = false;
+          setResult('Fin de bloque Mientras');
+          currentState = 1;
+        } else {
+          setResult('Comando desconocido \'' + command + '\' dentro de Mientras');
+          return false;
+        }
+
+        // Reevaluar la condición del Mientras después de cada comando
+        if (inWhileBlock) {
+          const operator = lines[lines.indexOf(line) - 1].trim().split(" ")[2];
+          const conditionFloor = parseInt(lines[lines.indexOf(line) - 1].trim().split(" ")[3]);
+          if (operator === ">") conditionMet = currentFloor > conditionFloor;
+          else if (operator === "<") conditionMet = currentFloor < conditionFloor;
+          else if (operator === "=") conditionMet = currentFloor === conditionFloor;
+          else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
+          else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+        }
+        break;
+
+      case 4: // Dentro de un bloque Si no
+        if (command === "s" || command === "sub") {
+          const floors = parseInt(tokens[1]);
+          if (!isNaN(floors)) {
+            currentFloor += floors;
+            setResult('Subiendo a piso \'' + currentFloor + '\'');
+          } else {
+            setResult('Error: Se esperaba un número después de \'S\'');
+            return false;
+          }
+        } else if (command === "b" || command === "baj") {
+          const floors = parseInt(tokens[1]);
+          if (!isNaN(floors)) {
+            currentFloor -= floors;
+            setResult('Bajando a piso \'' + currentFloor + '\'');
+          } else {
+            setResult('Error: Se esperaba un número después de \'B\'');
+            return false;
+          }
+        } else if (command === "p" || command === "pausa") {
+          const time = parseInt(tokens[1]);
+          if (!isNaN(time)) {
+            setResult('Pausa de \'' + time + '\' unidades');
+          } else {
+            setResult('Error: Se esperaba un número después de \'Pausa\'');
+            return false;
+          }
+        } else if (command === "a") {
+          const time = parseInt(tokens[1]);
+          if (!isNaN(time)) {
+            setResult('Abrir por \'' + time + '\' unidades');
+          } else {
+            setResult('Error: Se esperaba un número después de \'A\'');
+            return false;
+          }
+        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+          inElseBlock = false;
+          afterSiBlock = false;
+          setResult('Fin de bloque Si no');
+          currentState = 1;
+        } else {
+          setResult('Comando desconocido \'' + command + '\' dentro de Si no');
+          return false;
+        }
+        break;
+
+      default:
+        setResult('Estado no válido');
+        return false;
     }
-    setIsValidCoding(currentState === 3);
-    return currentState === 3;
   }
+
+  return currentState === 1;
+}
+
 
   // Función para validar autómata de comandos
   function checkAutomatonComand(text) {
@@ -962,10 +1145,7 @@ export default function CodingScreen() {
 // Función para usar elevador
 async function usedElevator(selectedFloor) {
   if (nameProgram === "") {
-    Alert.alert(
-      "Falta nombre",
-      "Por favor, ingresa un nombre para el programa."
-    );
+    Alert.alert("Falta nombre", "Por favor, ingresa un nombre para el programa.");
   } else if (inputTextCoding === "") {
     Alert.alert("Falta Código", "Por favor, ingresa el código del programa.");
   } else {
@@ -987,24 +1167,57 @@ async function usedElevator(selectedFloor) {
 
       const floorMax = 7;
       const floorMin = 1;
-      let conditionMet = false; //condicion if
-      let inConditionBlock = false; //bloque de condiciones del if (cumplio o no)
+      let conditionMet = false;
+      let inConditionBlock = false;
+      let inWhileBlock = false;
+      let inElseBlock = false; // Para Si no
+      let afterSiBlock = false; // Para rastrear si estamos después de Fin Si
+      let whileStartIndex = -1;
 
-      //se divide el texto en lineas
       const lines = inputTextCoding.split("\n");
+      let i = 0;
 
-      for (let line of lines) {
+      while (i < lines.length) {
+        const line = lines[i];
         const tokens = line.trim().split(" ");
-        if (tokens.length === 0) continue;
+        if (tokens.length === 0) {
+          i++;
+          continue;
+        }
 
         const command = tokens[0].toLowerCase();
 
-        // omitir comandos si estamos en un bloque de condicion y la condicion no se cumple
-        if (inConditionBlock && !conditionMet) {// si la condicion interna es cumplida pero el if no 
-          if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {// se verifica que existe el fin si
-            inConditionBlock = false; // sale del bloque de instrucciones
+        // Saltar comandos si estamos en un bloque Si y la condición no se cumple
+        if (inConditionBlock && !conditionMet) {
+          if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+            inConditionBlock = false;
+            afterSiBlock = true;
             console.log("Saliendo del bloque Si");
           }
+          i++;
+          continue;
+        }
+
+        // Saltar comandos si estamos en un bloque Si no y la condición del Si se cumplió
+        if (inElseBlock && conditionMet) {
+          if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+            inElseBlock = false;
+            afterSiBlock = false;
+            console.log("Saliendo del bloque Si no");
+          }
+          i++;
+          continue;
+        }
+
+        // Saltar comandos si estamos en un bloque Mientras y la condición no se cumple
+        if (inWhileBlock && !conditionMet) {
+          if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "mientras") {
+            inWhileBlock = false;
+            conditionMet = false;
+            console.log("Saliendo del bloque Mientras");
+            whileStartIndex = -1;
+          }
+          i++;
           continue;
         }
 
@@ -1012,8 +1225,8 @@ async function usedElevator(selectedFloor) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           console.log("Comando Inicio detectado");
           playSound(require("../assets/audio/dtmf_12.wav"), 1);
-          const numFloors = parseInt(tokens[1]); //convierte el siguiente caracter en numero
-          if (!isNaN(numFloors)) { //si es un numero de piso valido 
+          const numFloors = parseInt(tokens[1]);
+          if (!isNaN(numFloors)) {
             currentFloor = numFloors;
             console.log("Subiendo el elevador al piso...", currentFloor);
             setSelectedFloor(currentFloor);
@@ -1033,21 +1246,30 @@ async function usedElevator(selectedFloor) {
                 upNextLevelElevator();
                 playSound(require("../assets/audio/dtmf_2.wav"), 1);
               } else {
-                console.log(
-                  "El elevador no puede subir más. Límite de piso alcanzado:",
-                  floorMax
-                );
-                Alert.alert(
-                  "Piso máximo alcanzado",
-                  "Pasaremos al siguiente comando"
-                );
+                console.log("El elevador no puede subir más. Límite de piso alcanzado:", floorMax);
+                Alert.alert("Piso máximo alcanzado", "Pasaremos al siguiente comando");
+                if (inWhileBlock && whileStartIndex !== -1) {
+                  const whileLine = lines[whileStartIndex];
+                  const whileTokens = whileLine.trim().split(" ");
+                  const operator = whileTokens[2];
+                  const conditionFloor = parseInt(whileTokens[3]);
+                  if (operator === ">") conditionMet = currentFloor > conditionFloor;
+                  else if (operator === "<") conditionMet = currentFloor < conditionFloor;
+                  else if (operator === "=") conditionMet = currentFloor === conditionFloor;
+                  else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
+                  else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+                  if (!conditionMet || currentFloor >= floorMax) {
+                    inWhileBlock = false;
+                    conditionMet = false;
+                    whileStartIndex = -1;
+                    console.log("Saliendo del bloque Mientras debido al límite de piso");
+                  }
+                }
                 break;
               }
             }
           } else {
-            console.log(
-              "Comando Subir detectado, pero el siguiente carácter no es un número."
-            );
+            console.log("Comando Subir detectado, pero el siguiente carácter no es un número.");
           }
         } else if (command === "b" || command === "baj") {
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -1063,21 +1285,13 @@ async function usedElevator(selectedFloor) {
                 downNextLevelElevator();
                 playSound(require("../assets/audio/dtmf_1.wav"), 1);
               } else {
-                console.log(
-                  "El elevador no puede bajar más. Límite de piso alcanzado:",
-                  floorMin
-                );
-                Alert.alert(
-                  "Piso mínimo alcanzado",
-                  "Pasaremos al siguiente comando"
-                );
+                console.log("El elevador no puede bajar más. Límite de piso alcanzado:", floorMin);
+                Alert.alert("Piso mínimo alcanzado", "Pasaremos al siguiente comando");
                 break;
               }
             }
           } else {
-            console.log(
-              "Comando Bajar detectado, pero el siguiente carácter no es un número."
-            );
+            console.log("Comando Bajar detectado, pero el siguiente carácter no es un número.");
           }
         } else if (command === "p" || command === "pausa") {
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -1090,11 +1304,9 @@ async function usedElevator(selectedFloor) {
               playSound(require("../assets/audio/dtmf_3.wav"), 1);
             }
           } else {
-            console.log(
-              "Comando Parar detectado, pero el siguiente carácter no es un número."
-            );
+            console.log("Comando Parar detectado, pero el siguiente carácter no es un número.");
           }
-        } else if (command === "a" || command === "abr") {
+        } else if (command === "a") {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           console.log("Comando Abrir detectado, abriendo puertas");
           playSound(require("../assets/audio/dtmf_8.wav"), 1);
@@ -1113,9 +1325,7 @@ async function usedElevator(selectedFloor) {
               playSound(require("../assets/audio/dtmf_3.wav"), 1);
             }
           } else {
-            console.log(
-              "Comando Abrir detectado, pero el siguiente carácter no es un número."
-            );
+            console.log("Comando Abrir detectado, pero el siguiente carácter no es un número.");
           }
           await new Promise((resolve) => setTimeout(resolve, 1000));
           console.log("Cerrando puertas");
@@ -1124,8 +1334,7 @@ async function usedElevator(selectedFloor) {
           console.log("Deteniendo puertas");
           closeDoor();
           playSound(require("../assets/audio/dtmf_3.wav"), 1);
-
-        } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "piso") { // condicion si piso
+        } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "piso") {
           const operator = tokens[2];
           const conditionFloor = parseInt(tokens[3]);
           if (!isNaN(conditionFloor)) {
@@ -1136,29 +1345,88 @@ async function usedElevator(selectedFloor) {
             else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
             else {
               console.log("Operador inválido en 'Si piso'");
+              i++;
               continue;
             }
             inConditionBlock = true;
-            if (conditionMet) {
-              console.log(`Condición 'Si piso ${operator} ${conditionFloor}' cumplida`);
+            console.log(
+              conditionMet
+                ? "Condición Si piso '" + operator + "' '" + conditionFloor + "' cumplida"
+                : "Condición no cumplida"
+            );
           } else {
-              console.log(`Condición no cumplida`);
+            console.log("Error: Se esperaba un número después de 'Si piso [operador]'");
           }
+        } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "no" && afterSiBlock) {
+          inElseBlock = true;
+          console.log("Entrando en bloque Si no");
+        } else if (command === "mientras" && tokens[1] && tokens[1].toLowerCase() === "piso") {
+          const operator = tokens[2];
+          const conditionFloor = parseInt(tokens[3]);
+          if (!isNaN(conditionFloor)) {
+            if (operator === ">") conditionMet = currentFloor > conditionFloor;
+            else if (operator === "<") conditionMet = currentFloor < conditionFloor;
+            else if (operator === "=") conditionMet = currentFloor === conditionFloor;
+            else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
+            else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+            else {
+              console.log("Operador inválido en 'Mientras piso'");
+              i++;
+              continue;
+            }
+            inWhileBlock = true;
+            whileStartIndex = i;
+            console.log(
+              conditionMet
+                ? "Condición 'Mientras piso " + operator + " " + conditionFloor + "' cumplida"
+                : "Condición no cumplida"
+            );
           } else {
-            console.log("Error: Se esperaba un número después de 'Si piso operador'");
+            console.log("Error: Se esperaba un número después de 'Mientras piso [operador]'");
           }
-        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {//fin si
-          inConditionBlock = false;
-          conditionMet = false;
-          console.log("Saliendo del bloque Si");
+        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+          if (inConditionBlock) {
+            inConditionBlock = false;
+            afterSiBlock = true;
+            console.log("Saliendo del bloque Si");
+          } else if (inElseBlock) {
+            inElseBlock = false;
+            afterSiBlock = false;
+            console.log("Saliendo del bloque Si no");
+          }
+        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "mientras") {
+          if (inWhileBlock && conditionMet && whileStartIndex !== -1) {
+            i = whileStartIndex + 1;
+            continue;
+          } else {
+            inWhileBlock = false;
+            conditionMet = false;
+            whileStartIndex = -1;
+            console.log("Saliendo del bloque Mientras");
+          }
         } else if (command === "f" || command === "fin") {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           console.log("Comando Fin detectado");
           playSound(require("../assets/audio/dtmf_d.wav"), 1);
-          break; // salir al encontrar el fin
+          break;
         } else {
-          console.log(`Comando desconocido: '${command}'`);
+          console.log("Comando desconocido: '" + command + "'");
         }
+
+        // Reevaluar la condición del Mientras después de cada comando
+        if (inWhileBlock && whileStartIndex !== -1) {
+          const whileLine = lines[whileStartIndex];
+          const whileTokens = whileLine.trim().split(" ");
+          const operator = whileTokens[2];
+          const conditionFloor = parseInt(whileTokens[3]);
+          if (operator === ">") conditionMet = currentFloor > conditionFloor;
+          else if (operator === "<") conditionMet = currentFloor < conditionFloor;
+          else if (operator === "=") conditionMet = currentFloor === conditionFloor;
+          else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
+          else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+        }
+
+        i++;
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -1237,7 +1505,7 @@ async function usedElevator(selectedFloor) {
           <View style={[styles.Icons, { flex: 1 }]}>
             <FontAwesome
               name={iconCompile}
-              size={Platform.OS === "android" ? 40 : 35}
+              size={Platform.OS === "android" ? 45 : 35}
               color="black"
               onPress={() => usedElevator(selectedFloor)}
               disabled={isButtonDisabled}
@@ -1248,7 +1516,7 @@ async function usedElevator(selectedFloor) {
           <TouchableOpacity style={[styles.Icons, { flex: 1 }]}>
             <MaterialCommunityIcons
               name="usb-port"
-              size={Platform.OS === "android" ? 40 : 35}
+              size={Platform.OS === "android" ? 45 : 35}
               color="black"
               onPress={saveProgram}
             />
@@ -1258,7 +1526,7 @@ async function usedElevator(selectedFloor) {
           <View style={[styles.Icons, { flex: 1 }]}>
             <FontAwesome5
               name="file-upload"
-              size={Platform.OS === "android" ? 40 : 35}
+              size={Platform.OS === "android" ? 45 : 35}
               color="black"
               onPress={() => {setModalVisible(true);}}
 
@@ -1280,7 +1548,7 @@ async function usedElevator(selectedFloor) {
             <View style={styles.modalView}>
               <Text
                 style={{
-                  fontSize: Platform.OS === "android" ? 10 : 15,
+                  fontSize: Platform.OS === "android" ? 45 : 15,
                   marginBottom: 10,
                 }}
               >
@@ -1312,7 +1580,7 @@ async function usedElevator(selectedFloor) {
           <View style={[styles.Icons, { flex: 1 }]}>
             <MaterialIcons
               name="delete"
-              size={Platform.OS === "android" ? 40 : 35}
+              size={Platform.OS === "android" ? 45 : 35}
               color="black"
               onPress={() => {
                 deletedProgram();
@@ -1324,7 +1592,7 @@ async function usedElevator(selectedFloor) {
           <View style={[styles.Icons, { flex: 1 }]}>
             <MaterialCommunityIcons
               name="gamepad-variant"
-              size={Platform.OS === "android" ? 40 : 35}
+              size={Platform.OS === "android" ? 45 : 35}
               color="black"
               onPress={() => {
                 usedElevator(selectedFloor),
@@ -1416,7 +1684,7 @@ async function usedElevator(selectedFloor) {
           <View style={[styles.Icons, { flex: 1 }]}>
             <MaterialIcons
               name="help"
-              size={Platform.OS === "android" ? 40 : 35}
+              size={Platform.OS === "android" ? 45 : 35}
               color="black"
               onPress={() => navigation.navigate("HelpCodingScreen")}
             />
@@ -1455,7 +1723,7 @@ async function usedElevator(selectedFloor) {
           <TouchableOpacity style={styles.recordButtonContainer}>
             <FontAwesome5
               name={recording ? "microphone-slash" : "microphone"}
-              size={35}
+              size={55}
               color="#f0ffff"
               onPress={recording ? stopRecording : startRecording}
               
