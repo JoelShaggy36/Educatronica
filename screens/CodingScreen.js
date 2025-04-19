@@ -215,7 +215,9 @@ export default function CodingScreen() {
         .replace(/Mayor o igual que|mayor o igual que|MAYOR O IGUAL QUE/g, ">=") // Reemplazar alguna opcion de igual que por ">="
         .replace(/Menor o igual que|menor o igual que|MENOR O IGUAL QUE/g, "<=") // Reemplazar alguna opcion de igual que por "<="
         .replace(/Diferente que|diferente que|DIFERENTE QUE/g, "!=") // Reemplazar alguna opcion de igual que por "<="
-        .replace(/Fin si|fin si|FIN SI/g, "Fin si") // Reemplazar alguna opcion de diferente que por "FIN SI"
+        .replace(/Si piso|si piso|SI PISO/g, "Si piso") // Reemplazar alguna opcion de si piso que por "Si piso"
+        .replace(/Fin si|fin si|FIN SI/g, "Fin si") // Reemplazar alguna opcion de fin si que por "FIN SI"
+        .replace(/Si no|si no|SI NO/g, "Si no") // Reemplazar alguna opcion de si no que por "Si no"
 
 
         .replace(/,/g, "") // Reemplazar "," por ""
