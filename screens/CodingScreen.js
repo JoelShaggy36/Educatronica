@@ -34,8 +34,6 @@ import { API_KEY } from "../config";
 
 //Componente principal
 export default function CodingScreen() {
-  let contadorPiso = 1;
-  let numPiso;
   const [nameProgram, setNameProgram] = useState(""); //Variables para ingresar texto en el ProgramName
   const [inputTextCoding, setInputTextCoding] = useState(""); //Variables para ingresar texto
   const [isValid, setIsValid] = useState(false); //Variables para saber si el comando es correcto
@@ -208,17 +206,19 @@ export default function CodingScreen() {
         .replace(/Sube|sube|suve|Suve|SUBE|SUVE/g, "S") // Reemplazar alguna opcion de Subir por "S"
         .replace(/Baja|baja|vaja|Vaja|BAJA|VAJA/g, "B") // Reemplazar alguna opcion de Bajar por "B"
         .replace(/Para|para|PARA/g, "P") // Reemplazar alguna opcion de Bajar por "P"
-        .replace(/Abrir|abrir|ABRIR/g, "A") // Reemplazar alguna opcion de Bajar por "B"
+        .replace(/Abre|abre|ABRE/g, "A") // Reemplazar alguna opcion de Bajar por "B"
         .replace(/Menor que|menor que|MENOR QUE/g, "<") // Reemplazar alguna opcion de menor que por "<"
         .replace(/Mayor que|mayor que|MAYOR QUE/g, ">") // Reemplazar alguna opcion de mayor que por ">"
-        .replace(/Igual Igual que|igual igual que|IGUAL IGUAL QUE/g, "==") // Reemplazar alguna opcion de igual que por "="
+        .replace(/Igual Igual que|Igual igual que|igual Igual que|igual igual que|igual o igual que|Igual o Igual que|igual o Igual que|Igual o igual que|IGUAL o IGUAL QUE|IGUAL O IGUAL QUE/g, "==") // Reemplazar alguna opcion de igual que por "=="
         .replace(/Mayor o igual que|mayor o igual que|MAYOR O IGUAL QUE/g, ">=") // Reemplazar alguna opcion de igual que por ">="
         .replace(/Menor o igual que|menor o igual que|MENOR O IGUAL QUE/g, "<=") // Reemplazar alguna opcion de igual que por "<="
         .replace(/Diferente que|diferente que|DIFERENTE QUE/g, "!=") // Reemplazar alguna opcion de igual que por "<="
-        .replace(/Si piso|si piso|SI PISO/g, "Si piso") // Reemplazar alguna opcion de si piso que por "Si piso"
-        .replace(/Fin si|fin si|FIN SI/g, "Fin si") // Reemplazar alguna opcion de fin si que por "FIN SI"
-        .replace(/Si no|si no|SI NO/g, "Si no") // Reemplazar alguna opcion de si no que por "Si no"
-
+        .replace(/Si piso es|si piso es|SI PISO ES/g, "Si piso") // Reemplazar alguna opcion de si piso es por "Si piso"
+        .replace(/Fin si|Fin sí|Fin SI|fin si|FIN SI/g, "Fin si") // Reemplazar alguna opcion de fin si por "FIN SI"
+        .replace(/Pin si|Pin sí|Pin SI|pin si|PIN SI/g, "Fin si") // Reemplazar alguna opcion de pin si(es muy comun que la API detecte fin si como pin si)por "FIN SI"
+        .replace(/Si no|Sí no|si no|sí no|si NO|SI no|SI NO|SINO|sino|SIno|siNO/g, "Si no") // Reemplazar alguna opcion de si no que por "Si no"
+        .replace(/Fin no|Fin No|Fin nO|fin no|fin NO|FIN no|FIN NO/g, "Fin no") // Reemplazar alguna opcion de si no que por "Si no"
+        .replace(/Pin no|pin no|pin NO|PIN no|PIN NO/g, "Fin no") // Reemplazar alguna opcion de si no que por "Si no"
 
         .replace(/,/g, "") // Reemplazar "," por ""
 
@@ -692,21 +692,6 @@ function automatonCoding(inputText) {
       continue;
     }
 
-    if (inElseBlock) {
-      if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
-        inElseBlock = false;
-        afterSiBlock = false; // Reiniciar después de cerrar Si no
-        setResultVerific('Bloque Si no cerrado correctamente');
-        currentState = 1;
-      } else if (["s", "subir", "b", "bajar", "p", "pausa", "a", "abrir"].includes(command)) {
-        setResultVerific('Tu código va por buen camino');
-      } else {
-        setResultVerific('Comando desconocido \'' + command + '\' dentro de Si no');
-        return false;
-      }
-      continue;
-    }
-
     if (inWhileBlock) {
       if (command === "s" || command === "subir" || command === "b" || command === "bajar") {
         modifiesFloorInWhile = true;
@@ -733,7 +718,7 @@ function automatonCoding(inputText) {
     switch (currentState) {
       case 0: // Estado inicial
         setResultVerific('Comienza tu programa');
-        if (command === "i") {
+        if (command === "i" || command === "inicio") {
           const floor = tokens[1] ? parseInt(tokens[1]) : 1;
           if (!isNaN(floor) && Number.isInteger(floor)) {
             setResultVerific('Piso inicial detectado: \'' + floor + '\'');
@@ -751,7 +736,7 @@ function automatonCoding(inputText) {
         } else if (command === "si" && tokens[1] && tokens[1].toLowerCase() === "piso") {
           const operator = tokens[2];
           const conditionFloor = parseInt(tokens[3]);
-          if (!isNaN(conditionFloor) && ["=", "<", ">", "<=", ">=", "!="].includes(operator)) {
+          if (!isNaN(conditionFloor) && ["=", "==", "<", ">", "<=", ">=", "!="].includes(operator)) {
             setResultVerific('Condición Si detectada');
             inConditionBlock = true;
             currentState = 2;
@@ -766,7 +751,7 @@ function automatonCoding(inputText) {
         } else if (command === "mientras" && tokens[1] && tokens[1].toLowerCase() === "piso") {
           const operator = tokens[2];
           const conditionFloor = parseInt(tokens[3]);
-          if (!isNaN(conditionFloor) && ["=", "<", ">", "<=", ">=", "!="].includes(operator)) {
+          if (!isNaN(conditionFloor) && ["=", "==", "<", ">", "<=", ">=", "!="].includes(operator)) {
             whileCondition = { operator, conditionFloor };
             setResultVerific('Condición Mientras detectada');
             inWhileBlock = true;
@@ -786,15 +771,25 @@ function automatonCoding(inputText) {
         break;
 
       case 2: // Dentro de un bloque Si
-        // Manejado en el bloque if (inConditionBlock) arriba
+        // Manejado por el if (inConditionBlock) arriba
         break;
 
       case 3: // Dentro de un bloque Mientras
-        // Manejado en el bloque if (inWhileBlock) arriba
+        // Manejado por el if (inWhileBlock) arriba
         break;
 
       case 4: // Dentro de un bloque Si no
-        // Manejado en el bloque if (inElseBlock) arriba
+        if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "no") {
+          inElseBlock = false;
+          afterSiBlock = false; // Reiniciar después de cerrar Si no
+          setResultVerific('Bloque Si no cerrado correctamente');
+          currentState = 1;
+        } else if (["s", "subir", "b", "bajar", "p", "pausa", "a", "abrir"].includes(command)) {
+          setResultVerific('Tu código va por buen camino');
+        } else {
+          setResultVerific('Comando desconocido \'' + command + '\' dentro de Si no');
+          return false;
+        }
         break;
 
       default:
@@ -825,7 +820,6 @@ function automatonComands(inputText) {
 
     const command = tokens[0].toLowerCase();
 
-    // Saltar comandos si estamos en un bloque Si y la condición no se cumple
     if (inConditionBlock && !conditionMet) {
       if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
         inConditionBlock = false;
@@ -837,18 +831,6 @@ function automatonComands(inputText) {
       continue;
     }
 
-    // Saltar comandos si estamos en un bloque Si no y la condición del Si se cumplió
-    if (inElseBlock && conditionMet) {
-      if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
-        inElseBlock = false;
-        afterSiBlock = false;
-        setResult('Fin de bloque Si no');
-        currentState = 1;
-      }
-      continue;
-    }
-
-    // Saltar comandos si estamos en un bloque Mientras y la condición no se cumple
     if (inWhileBlock && !conditionMet) {
       if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "mientras") {
         inWhileBlock = false;
@@ -862,7 +844,7 @@ function automatonComands(inputText) {
     switch (currentState) {
       case 0: // Estado inicial
         setResult('Ingresa tus comandos');
-        if (command === "i") {
+        if (command === "i" || command === "inicio") {
           const floor = parseInt(tokens[1]);
           if (!isNaN(floor)) {
             currentFloor = floor;
@@ -871,6 +853,7 @@ function automatonComands(inputText) {
           } else {
             setResult('Piso 1 detectado');
             currentFloor = 1;
+            currentState = 1;
           }
         }
         break;
@@ -919,6 +902,7 @@ function automatonComands(inputText) {
             else if (operator === "=") conditionMet = currentFloor === conditionFloor;
             else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
             else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+            else if (operator === "==") conditionMet = currentFloor == conditionFloor;
             else if (operator === "!=") conditionMet = currentFloor != conditionFloor;
             else {
               setResult('Error: Operador inválido en \'Si piso\'');
@@ -949,6 +933,7 @@ function automatonComands(inputText) {
             else if (operator === "=") conditionMet = currentFloor === conditionFloor;
             else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
             else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+            else if (operator === "==") conditionMet = currentFloor == conditionFloor;
             else if (operator === "!=") conditionMet = currentFloor != conditionFloor;
             else {
               setResult('Error: Operador inválido en \'Mientras piso\'');
@@ -1048,7 +1033,7 @@ function automatonComands(inputText) {
             setResult('Error: Se esperaba un número después de \'Pausa\'');
             return false;
           }
-        } else if (command === "a") {
+        } else if (command === "a" || command === "abrir") {
           const time = parseInt(tokens[1]);
           if (!isNaN(time)) {
             setResult('Abrir por \'' + time + '\' unidades');
@@ -1075,11 +1060,22 @@ function automatonComands(inputText) {
           else if (operator === "=") conditionMet = currentFloor === conditionFloor;
           else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
           else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+          else if (operator === "==") conditionMet = currentFloor == conditionFloor;
           else if (operator === "!=") conditionMet = currentFloor != conditionFloor;
         }
         break;
 
       case 4: // Dentro de un bloque Si no
+        if (inElseBlock && conditionMet) {
+          if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "no") {
+            inElseBlock = false;
+            afterSiBlock = false;
+            setResult('Fin de bloque Si no');
+            currentState = 1;
+          }
+          continue;
+        }
+
         if (command === "s" || command === "subir") {
           const floors = parseInt(tokens[1]);
           if (!isNaN(floors)) {
@@ -1106,7 +1102,7 @@ function automatonComands(inputText) {
             setResult('Error: Se esperaba un número después de \'Pausa\'');
             return false;
           }
-        } else if (command === "a") {
+        } else if (command === "a" || command === "abrir") {
           const time = parseInt(tokens[1]);
           if (!isNaN(time)) {
             setResult('Abrir por \'' + time + '\' unidades');
@@ -1114,7 +1110,7 @@ function automatonComands(inputText) {
             setResult('Error: Se esperaba un número después de \'A\'');
             return false;
           }
-        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "no") {
           inElseBlock = false;
           afterSiBlock = false;
           setResult('Fin de bloque Si no');
@@ -1205,7 +1201,7 @@ async function usedElevator(selectedFloor) {
 
         // Saltar comandos si estamos en un bloque Si no y la condición del Si se cumplió
         if (inElseBlock && conditionMet) {
-          if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "si") {
+          if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "no") {
             inElseBlock = false;
             afterSiBlock = false;
             console.log("Saliendo del bloque Si no");
@@ -1236,6 +1232,11 @@ async function usedElevator(selectedFloor) {
             console.log("Subiendo el elevador al piso...", currentFloor);
             setSelectedFloor(currentFloor);
             setCurrentLevelXElevator(levelsElevator[currentFloor - 1]);
+          } else {
+            currentFloor = 1; // Si no se especifica piso, inicia en 1
+            console.log("Subiendo el elevador al piso...", currentFloor);
+            setSelectedFloor(currentFloor);
+            setCurrentLevelXElevator(levelsElevator[currentFloor - 1]);
           }
         } else if (command === "s" || command === "subir") {
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -1263,6 +1264,7 @@ async function usedElevator(selectedFloor) {
                   else if (operator === "=") conditionMet = currentFloor === conditionFloor;
                   else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
                   else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+                  else if (operator === "==") conditionMet = currentFloor == conditionFloor;
                   else if (operator === "!=") conditionMet = currentFloor != conditionFloor;
                   if (!conditionMet || currentFloor >= floorMax) {
                     inWhileBlock = false;
@@ -1312,7 +1314,7 @@ async function usedElevator(selectedFloor) {
           } else {
             console.log("Comando Parar detectado, pero el siguiente carácter no es un número.");
           }
-        } else if (command === "a") {
+        } else if (command === "a" || command === "abrir") {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           console.log("Comando Abrir detectado, abriendo puertas");
           playSound(require("../assets/audio/dtmf_8.wav"), 1);
@@ -1349,6 +1351,7 @@ async function usedElevator(selectedFloor) {
             else if (operator === "=") conditionMet = currentFloor === conditionFloor;
             else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
             else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+            else if (operator === "==") conditionMet = currentFloor == conditionFloor;
             else if (operator === "!=") conditionMet = currentFloor != conditionFloor;
             else {
               console.log("Operador inválido en 'Si piso'");
@@ -1376,6 +1379,7 @@ async function usedElevator(selectedFloor) {
             else if (operator === "=") conditionMet = currentFloor === conditionFloor;
             else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
             else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+            else if (operator === "==") conditionMet = currentFloor == conditionFloor;
             else if (operator === "!=") conditionMet = currentFloor != conditionFloor;
             else {
               console.log("Operador inválido en 'Mientras piso'");
@@ -1397,7 +1401,9 @@ async function usedElevator(selectedFloor) {
             inConditionBlock = false;
             afterSiBlock = true;
             console.log("Saliendo del bloque Si");
-          } else if (inElseBlock) {
+          }
+        } else if (command === "fin" && tokens[1] && tokens[1].toLowerCase() === "no") {
+          if (inElseBlock) {
             inElseBlock = false;
             afterSiBlock = false;
             console.log("Saliendo del bloque Si no");
@@ -1432,6 +1438,7 @@ async function usedElevator(selectedFloor) {
           else if (operator === "=") conditionMet = currentFloor === conditionFloor;
           else if (operator === "<=") conditionMet = currentFloor <= conditionFloor;
           else if (operator === ">=") conditionMet = currentFloor >= conditionFloor;
+          else if (operator === "==") conditionMet = currentFloor == conditionFloor;
           else if (operator === "!=") conditionMet = currentFloor != conditionFloor;
         }
 
